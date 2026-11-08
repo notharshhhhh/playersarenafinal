@@ -1,0 +1,285 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net - Deny all by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.uid == "XoXyXcnrlzOaMIKKolXnU3mT9xn1" ||
+        (request.auth.token.keys().hasAny(['email']) && (
+          request.auth.token.email == "playersarena.site@gmail.com" ||
+          request.auth.token.email.lower() == "playersarena.site@gmail.com" ||
+          request.auth.token.email == "tournament909@gmail.com" ||
+          request.auth.token.email == "harsha.cpr001@gmail.com" ||
+          request.auth.token.email == "admin@khelgalli.com" ||
+          request.auth.token.email == "qupagaming@gmail.com" || 
+          request.auth.token.email == "mahendrathakur9009@gmail.com" ||
+          request.auth.token.email == "mahendrar9009@gmail.com" ||
+          request.auth.token.email == "chouhanadarsh99@gmail.com" ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.token.email)) ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()))
+        )) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isStaff() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isStaff == true &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.staffStatus != 'suspended') ||
+        (exists(/databases/$(database)/documents/staff/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.status != 'suspended')
+      );
+    }
+
+    // --- Staff match-claim helpers ---
+    function isMatchClosed(d) {
+      return d.get('status', '') in ['completed', 'cancelled'];
+    }
+
+    function isUnclaimed(d) {
+      return d.get('claimedBy', null) == null;
+    }
+
+    function ownsClaim(d) {
+      return d.get('claimedBy', null) == request.auth.uid;
+    }
+
+    // The match document (before this write) is claimed by the caller and still open
+    function ownsOpenMatch(matchId) {
+      return exists(/databases/$(database)/documents/matches/$(matchId)) &&
+        ownsClaim(get(/databases/$(database)/documents/matches/$(matchId)).data) &&
+        !isMatchClosed(get(/databases/$(database)/documents/matches/$(matchId)).data);
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidGameMode(data) {
+      return data.keys().hasAll(['id', 'gameId', 'title', 'image']) &&
+             data.id is string && data.id.size() <= 100 &&
+             data.gameId is string && data.gameId.size() <= 50 &&
+             data.title is string && data.title.size() <= 100 &&
+             data.image is string && data.image.size() <= 2500;
+    }
+
+    // --- Specific Collection Rules ---
+
+    // Admins collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Game Modes: Dynamic game mode configurations
+    match /gameModes/{modeId} {
+      allow read, get, list: if true;
+      allow create, update: if isAdmin() && isValidGameMode(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Users: Profiles and wallet information
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.keys().hasAll(['username', 'email', 'wallet']) &&
+               data.username is string && data.username.size() <= 100 &&
+               data.email is string && data.email.size() <= 200 &&
+               data.wallet is map;
+      }
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // Allowed for Leaderboard & Admin
+      allow create: if (isOwner(userId) && isValidUser(request.resource.data)) || isAdmin();
+      allow update: if isAdmin() || isStaff() || (
+        isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'username', 'phone', 'wallet', 'stats', 'isKycVerified', 'referralClaimed', 'deviceId', 'ign', 'gameIGNs', 'fcmEnabled', 'notificationsEnabled'
+        ])
+      ) || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['wallet', 'stats'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Staff: Admin-managed staff accounts and role assignments
+    match /staff/{staffId} {
+      allow read, get, list: if isSignedIn();
+      allow write, create, update, delete: if isAdmin();
+    }
+
+    // Games: Public list of supported games
+    match /games/{gameId} {
+      allow read, list, get: if true;
+      allow write: if isAdmin();
+    }
+
+    // Game Rules: Detailed rules for game modes
+    match /gameRules/{ruleId} {
+      allow read, list, get: if true;
+      allow write: if isAdmin();
+    }
+
+    // Matches: The actual tournament/match instances
+    match /matches/{matchId} {
+      allow read, list, get: if true;
+
+      // Staff cannot pre-assign a claim when creating a match
+      allow create: if isAdmin() || (isStaff() && !('claimedBy' in request.resource.data));
+
+      // Staff may delete only an open match they have claimed
+      allow delete: if isAdmin() || (isStaff() && ownsClaim(resource.data) && !isMatchClosed(resource.data));
+
+      allow update: if isSignedIn() && (
+        // Admin: full access (emergency override / dispute resolution)
+        isAdmin() ||
+
+        // 1) CLAIM: only an unclaimed, open match; staff may only write their own claim fields
+        (isStaff() &&
+          !isMatchClosed(resource.data) &&
+          isUnclaimed(resource.data) &&
+          request.resource.data.get('claimedBy', null) == request.auth.uid &&
+          request.resource.data.claimedAt == request.time &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['claimedBy', 'claimedByName', 'claimedAt', 'updatedAt'])) ||
+
+        // 2) MANAGE: only the claiming staff, only while the match is open (closed = locked for staff)
+        (isStaff() &&
+          !isMatchClosed(resource.data) &&
+          ownsClaim(resource.data) &&
+          request.resource.data.get('claimedBy', null) == request.auth.uid) ||
+
+        // 3) Players joining a match
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'playersCount']))
+      );
+    }
+
+    // Registrations: Player entries into matches
+    match /registrations/{registrationId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin() || isStaff());
+      allow create: if isSignedIn() && (request.resource.data.userId == request.auth.uid || isAdmin() || isStaff());
+      allow update: if isAdmin() || isStaff() || (isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId);
+      allow delete: if isAdmin() || isStaff() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // Transactions: Financial audit trail
+    match /transactions/{transactionId} {
+      allow get: if true;
+      // Allowed for Leaderboard, personal view, and Admin/Staff management
+      allow list: if isSignedIn() && (
+        isAdmin() || isStaff() ||
+        resource.data.userId == request.auth.uid || 
+        resource.data.type == 'win'
+      );
+      allow create: if true;
+      allow update: if isAdmin() || isStaff() || 
+        (isSignedIn() && resource.data.userId == request.auth.uid && resource.data.status == 'pending') ||
+        (resource.data.status == 'pending');
+      allow delete: if isAdmin();
+    }
+
+    // App Settings: Global configs
+    match /appSettings/{settingId} {
+      allow read, get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    // Settings: Legacy / Payment settings support
+    match /settings/{settingId} {
+      allow read, get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    // Banners: Promotional banners
+    match /banners/{bannerId} {
+      allow read, get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    // Announcements: Public ticker announcements
+    match /announcements/{announcementId} {
+      allow read, get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    // Match Results: Declared winners and scores
+    match /matchResults/{matchId} {
+      allow read, list, get: if isSignedIn();
+      // Staff can submit results only for their own claimed, still-open match
+      allow write: if isAdmin() || (isStaff() && ownsOpenMatch(matchId));
+    }
+
+    // Staff Payments: one record per match (doc id = matchId) -> a match can never pay staff twice
+    match /staffPayments/{matchId} {
+      allow get, list: if isAdmin() || (isSignedIn() && resource.data.staffId == request.auth.uid);
+      allow create: if isAdmin() || (
+        isStaff() &&
+        request.resource.data.staffId == request.auth.uid &&
+        request.resource.data.outcome in ['success', 'terminated'] &&
+        request.resource.data.amount is number &&
+        request.resource.data.amount >= 0 &&
+        request.resource.data.amount <= (
+          exists(/databases/$(database)/documents/staff/$(request.auth.uid))
+            ? get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.get('matchPayment', 0)
+            : 0
+        ) &&
+        ownsOpenMatch(matchId)
+      );
+      allow update, delete: if false;
+    }
+
+    // Staff Action Logs: append-only audit trail (claim / success / terminate / release)
+    match /staffActionLogs/{logId} {
+      allow read, list, get: if isAdmin();
+      allow create: if isAdmin() || (isStaff() && request.resource.data.staffId == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    // Payment Settings: Gateway configurations
+    match /paymentSettings/{gatewayId} {
+      allow read, get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    // Notifications: Push alerts & broadcast messages
+    match /notifications/{notificationId} {
+      allow read, get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || isStaff() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']));
+      allow delete: if isAdmin() || isStaff();
+    }
+
+    // Legacy/Mirror support for tournaments
+    match /tournaments/{tournamentId} {
+      allow read, list, get: if true;
+      allow write: if isAdmin();
+    }
+
+    // Meta/Counters
+    match /meta/counters {
+      allow read, get, write: if isAdmin();
+    }
+
+    // Media Assets: Central image library for banners, games, and tournament modes
+    match /mediaAssets/{assetId} {
+      allow read, get, list: if true;
+      allow write, create, update, delete: if isAdmin() || isStaff();
+    }
+  }
+}

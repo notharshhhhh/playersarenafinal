@@ -1,0 +1,407 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+/* Design is dark-only: dark: variants apply in both theme modes so the toggle never exposes light styles */
+@custom-variant dark (&:where(.dark, .dark *, .light, .light *));
+
+:root {
+  --bg-canvas: #050505;
+  --bg-surface: #141414;
+  --bg-surface-muted: #1a1a1a;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --text-primary: #ffffff;
+  --text-secondary: #a8a8a8;
+  --text-muted: #7a7a7a;
+  --card-shadow: none;
+}
+
+.dark {
+  --bg-canvas: #050505;
+  --bg-surface: #141414;
+  --bg-surface-muted: #1a1a1a;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --text-primary: #ffffff;
+  --text-secondary: #a8a8a8;
+  --text-muted: #7a7a7a;
+  --card-shadow: none;
+}
+
+@theme {
+  --color-primary: #F37A1F;
+  --color-secondary: #FF9A4D;
+  --color-accent: #FF3B3B;
+  --color-background: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-surface-lighter: var(--bg-surface-muted);
+
+  --font-sans: "Orbitron", "Michroma", "Exo 2", sans-serif;
+  --font-display: "Orbitron", "Michroma", "Exo 2", sans-serif;
+
+  /* Brand scale: every purple-* / indigo-* / violet-* / fuchsia-* utility renders orange */
+  --color-purple-50: #FFF4EA;
+  --color-purple-100: #FFE6D1;
+  --color-purple-200: #FFCFA3;
+  --color-purple-300: #FFB677;
+  --color-purple-400: #FF9A4D;
+  --color-purple-500: #F98A33;
+  --color-purple-600: #F37A1F;
+  --color-purple-700: #D9660F;
+  --color-purple-800: #B8530B;
+  --color-purple-900: #7A3708;
+  --color-purple-950: #3D1B04;
+  --color-indigo-50: #FFF4EA;
+  --color-indigo-100: #FFE6D1;
+  --color-indigo-200: #FFCFA3;
+  --color-indigo-300: #FFB677;
+  --color-indigo-400: #FFA45E;
+  --color-indigo-500: #FF9A4D;
+  --color-indigo-600: #FF9A4D;
+  --color-indigo-700: #F37A1F;
+  --color-indigo-800: #D9660F;
+  --color-indigo-900: #7A3708;
+  --color-indigo-950: #3D1B04;
+  --color-violet-400: #FF9A4D;
+  --color-violet-500: #F98A33;
+  --color-violet-600: #F37A1F;
+  --color-violet-700: #D9660F;
+  --color-fuchsia-500: #F98A33;
+  --color-fuchsia-600: #F37A1F;
+
+  /* Light-only utilities fall back to dark-friendly values (design is dark-only) */
+  --color-slate-50: #1a1a1a;
+  --color-slate-100: #1e1e1e;
+  --color-slate-200: #2a2a2a;
+  --color-slate-300: #4a4a4a;
+  --color-slate-400: #7a7a7a;
+  --color-slate-500: #8f8f8f;
+  --color-slate-600: #a8a8a8;
+  --color-slate-700: #c8c8c8;
+  --color-slate-800: #e0e0e0;
+  --color-slate-900: #ffffff;
+
+  /* Dark greys (used through dark: variants) */
+  --color-neutral-500: #7a7a7a;
+  --color-neutral-600: #4a4a4a;
+  --color-neutral-700: #333333;
+  --color-neutral-800: #2a2a2a;
+  --color-neutral-900: #1a1a1a;
+  --color-neutral-950: #0c0c0c;
+  --color-zinc-500: #7a7a7a;
+  --color-zinc-600: #4a4a4a;
+  --color-zinc-700: #333333;
+  --color-zinc-800: #2a2a2a;
+  --color-zinc-900: #1a1a1a;
+  --color-zinc-950: #0c0c0c;
+
+  /* Status colours */
+  --color-emerald-400: #4ADE80;
+  --color-emerald-500: #22C55E;
+  --color-emerald-600: #16A34A;
+  --color-green-500: #22C55E;
+  --color-rose-400: #FF6B6B;
+  --color-rose-500: #FF3B3B;
+  --color-rose-600: #E02B2B;
+  --color-red-500: #FF3B3B;
+  --color-red-600: #E02B2B;
+  --color-amber-400: #FFD21F;
+  --color-amber-500: #FFD21F;
+  --color-amber-600: #E8B92A;
+  --color-yellow-400: #FFD21F;
+  --color-yellow-500: #FFD21F;
+}
+
+@keyframes btnShimmer {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+  }
+}
+
+@keyframes softPulseGlow {
+  0%, 100% {
+    box-shadow: 0 6px 20px -2px rgba(243, 122, 32, 0.30);
+  }
+  50% {
+    box-shadow: 0 8px 28px 2px rgba(243, 122, 32, 0.50);
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background-color: #050505;
+  }
+  body {
+    background-color: var(--bg-canvas);
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(255, 70, 40, 0.45) 0 2px, transparent 3px),
+      radial-gradient(circle at 82% 9%, rgba(243, 122, 32, 0.40) 0 2px, transparent 4px),
+      radial-gradient(circle at 91% 46%, rgba(255, 60, 40, 0.35) 0 1.5px, transparent 3px),
+      radial-gradient(circle at 7% 63%, rgba(243, 122, 32, 0.35) 0 2px, transparent 4px),
+      radial-gradient(circle at 56% 86%, rgba(255, 70, 40, 0.30) 0 1.5px, transparent 3px),
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+    background-attachment: fixed;
+    color: var(--text-primary);
+    @apply font-sans selection:bg-orange-500/30 antialiased tracking-normal transition-colors duration-300;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-black tracking-wide uppercase;
+  }
+  button:not(:disabled) {
+    transition: transform 0.18s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    cursor: pointer;
+  }
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+}
+
+@layer utilities {
+  .theme-canvas {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+  }
+  .theme-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--card-shadow);
+  }
+  .theme-card-muted {
+    background-color: var(--bg-surface-muted);
+    border: 1px solid var(--border-subtle);
+  }
+  .theme-modal {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.35);
+  }
+  .theme-text-primary {
+    color: var(--text-primary);
+  }
+  .theme-text-secondary {
+    color: var(--text-secondary);
+  }
+  .theme-text-muted {
+    color: var(--text-muted);
+  }
+  .glass {
+    @apply bg-white/80 dark:bg-[#141414]/80 backdrop-blur-md border border-slate-200/80 dark:border-white/5;
+  }
+  .glass-purple {
+    @apply bg-purple-500/5 dark:bg-purple-900/10 backdrop-blur-md border border-purple-500/20;
+  }
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-linear-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400;
+  }
+  .gradient-bg {
+    @apply bg-linear-to-br from-purple-600 to-indigo-600;
+  }
+  .card-hover {
+    @apply transition-all duration-200 hover:border-orange-500/60 active:scale-[0.99] hover:shadow-[0_8px_25px_rgba(243,122,32,0.12)];
+  }
+  .btn-press {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.22s ease;
+  }
+  .btn-press:active {
+    transform: scale(0.97);
+  }
+  .btn-glow-purple {
+    animation: softPulseGlow 2.8s infinite ease-in-out;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(243, 122, 32, 0.25);
+    border-radius: 20px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(243, 122, 32, 0.5);
+  }
+}
+
+/* ------------------------------------------------------------------
+   BBG design-system components (values mirror src/theme.ts)
+------------------------------------------------------------------- */
+@keyframes bbgBellWave {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(8deg); }
+  40% { transform: rotate(-8deg); }
+  60% { transform: rotate(4deg); }
+  80% { transform: rotate(-4deg); }
+}
+@keyframes bbgShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@layer components {
+  .bbg-page-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #FFF3E0;
+    text-shadow: 0 0 12px rgba(255, 160, 60, 0.5);
+  }
+  .bbg-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #7a7a7a;
+  }
+  .bbg-balance {
+    font-size: 42px;
+    font-weight: 900;
+    font-style: italic;
+    color: #fff;
+    line-height: 1;
+  }
+  .bbg-card {
+    background-color: #141414;
+    background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 55%);
+    border: 1.5px solid rgba(243, 122, 32, 0.45);
+    border-radius: 30px;
+  }
+  .bbg-row {
+    background-color: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+  }
+  .bbg-tile {
+    background-color: #151515;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px;
+  }
+  .bbg-banner {
+    border-radius: 26px;
+    background-color: #0c0c0c;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(180deg, #1c1c1c 0%, #0c0c0c 55%, #000 100%);
+    background-size: 40px 40px, 40px 40px, 100% 100%;
+  }
+  .bbg-gold-title {
+    background-image: linear-gradient(90deg, #E8B92A, #B8860B);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 10px rgba(232, 185, 42, 0.45));
+  }
+  .bbg-tag {
+    background-color: #1a1a1a;
+    border: 1.5px solid rgba(243, 122, 32, 0.45);
+    border-radius: 16px;
+    color: #F37A1F;
+    font-weight: 700;
+    padding: 8px 14px;
+  }
+  .bbg-stats {
+    background-color: #151515;
+    border: 1.5px solid rgba(243, 122, 32, 0.45);
+    border-radius: 30px;
+  }
+  .bbg-btn-primary {
+    background-color: #F37A1F;
+    color: #000;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    box-shadow: 0 6px 20px rgba(243, 122, 32, 0.40);
+  }
+  .bbg-btn-wallet {
+    background-image: linear-gradient(135deg, #F37A1F, #FF9A4D);
+    color: #000;
+    font-weight: 800;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(243, 122, 32, 0.35);
+  }
+  .bbg-btn-secondary {
+    background-color: #111;
+    border: 1px solid #3a3a3a;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 14px;
+  }
+  .bbg-btn-disabled {
+    background-color: #1c1c1c;
+    color: rgba(0, 0, 0, 0.6);
+    border-radius: 22px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .bbg-coin-pill {
+    background-color: #0a0a0a;
+    border: 1.5px solid rgba(243, 122, 32, 0.45);
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 800;
+  }
+  .bbg-progress {
+    height: 6px;
+    background-color: #1e1e1e;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .bbg-progress > div {
+    height: 100%;
+    background-image: linear-gradient(90deg, #F37A1F, #FF9A4D);
+    border-radius: 999px;
+  }
+  .bbg-skeleton {
+    background-image: linear-gradient(90deg, #141414 25%, #1e1e1e 50%, #141414 75%);
+    background-size: 200% 100%;
+    animation: bbgShimmer 1.4s linear infinite;
+  }
+  .bbg-bell-wave { animation: bbgBellWave 2.4s ease-in-out infinite; transform-origin: 50% 10%; }
+
+  /* Inputs: utilities written on an element still win over this layer */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  textarea,
+  select {
+    background-color: #111;
+    border: 1.5px solid #2a2a2a;
+    border-radius: 16px;
+    color: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #7a7a7a;
+  }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: #F37A1F;
+    box-shadow: 0 0 0 3px rgba(243, 122, 32, 0.18);
+  }
+}
+
+/* Modal backdrops use the dimmed + blurred look */
+.fixed.inset-0.bg-black\/60,
+.fixed.inset-0.bg-black\/70,
+.fixed.inset-0.bg-black\/80 {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+}
